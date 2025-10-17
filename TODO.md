@@ -1,9 +1,4 @@
-# TODO: Fix Safety Validation Error
+# TODO: Modify Chatbot to Show All Query Results
 
-- [x] Remove 'union' from dangerousPatterns in backend/utils/safety.js
-- [x] Remove 'cast(' from dangerousPatterns in backend/utils/safety.js
-- [x] Remove 'convert(' from dangerousPatterns in backend/utils/safety.js
-- [x] Remove 'create' and 'table' from forbiddenKeywords in backend/utils/safety.js
-- [x] Remove ';' from dangerousPatterns in backend/utils/safety.js
-- [x] Normalize SQL in chat.js to remove newlines and trailing semicolons before validation
-- [x] Test critical-path: valid SELECT queries pass, dangerous queries fail
+- [x] Remove row limit from AI prompt in backend/routes/chat.js
+- [x] Update frontend in src/App.js to display all results without slicing or truncation

@@ -33,8 +33,7 @@ Rules:
 1. Return ONLY a valid PostgreSQL SELECT query
 2. Do NOT include explanations or markdown formatting
 3. Use proper table joins when needed
-4. Limit results to 100 rows maximum
-5. Use exact column names from the schema
+4. Use exact column names from the schema
 
 Question: "${nlQuestion}"
 

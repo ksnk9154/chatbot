@@ -1,10 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './App.css';
 
 function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, loading]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -38,13 +47,9 @@ function App() {
             botResponse += keys.join(' | ') + '\n';
             botResponse += keys.map(() => '---').join(' | ') + '\n';
 
-            results.slice(0, 5).forEach(row => { // Show max 5 rows
+            results.forEach(row => {
               botResponse += keys.map(key => row[key] || 'N/A').join(' | ') + '\n';
             });
-
-            if (results.length > 5) {
-              botResponse += `\n... and ${results.length - 5} more results`;
-            }
           }
         } else {
           botResponse = "No results found for your query.";
@@ -111,6 +116,7 @@ function App() {
             </div>
           ))}
           {loading && <div className="message bot"><div className="message-text">🔍 Searching database...</div></div>}
+          <div ref={messagesEndRef} />
         </div>
 
         <div className="chat-input">

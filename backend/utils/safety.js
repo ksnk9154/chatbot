@@ -56,7 +56,7 @@ function isSelectOnly(sql) {
 }
 
 /**
- * Sanitizes and limits a SQL query
+ * Sanitizes a SQL query
  * @param {string} sql - The SQL query to sanitize
  * @returns {string} - The sanitized query
  */
@@ -64,12 +64,6 @@ function sanitizeQuery(sql) {
   if (!sql) return '';
 
   let cleaned = sql.trim();
-
-  // Add LIMIT if not present and it's a SELECT
-  if (cleaned.toLowerCase().startsWith('select') && 
-      !cleaned.toLowerCase().includes('limit')) {
-    cleaned += ' LIMIT 100';
-  }
 
   return cleaned;
 }
