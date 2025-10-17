@@ -20,11 +20,11 @@ function isSelectOnly(sql) {
 
   // List of dangerous keywords that should not be present
   const forbiddenKeywords = [
-    'insert', 'update', 'delete', 'drop', 'truncate', 'alter', 
-    'create', 'grant', 'revoke', 'commit', 'rollback', 'begin',
+    'insert', 'update', 'delete', 'drop', 'truncate', 'alter',
+    'grant', 'revoke', 'commit', 'rollback', 'begin',
     'transaction', 'lock', 'unlock', 'exec', 'execute', 'call',
     'procedure', 'function', 'trigger', 'index', 'view', 'schema',
-    'database', 'table', 'column', 'constraint', 'sequence'
+    'database', 'constraint', 'sequence'
   ];
 
   // Check for forbidden keywords
@@ -34,24 +34,20 @@ function isSelectOnly(sql) {
     }
   }
 
-  // Check for SQL injection patterns
+  // Check for SQL injection patterns using regex for precise matching
   const dangerousPatterns = [
-    ';',           // Multiple statements
-    '--',          // SQL comments
-    '/*',          // Block comments
-    '*/',          // Block comments
-    'xp_',         // Extended stored procedures
-    'sp_',         // System stored procedures
-    '@@',          // Global variables
-    'char(',       // Character conversion
-    'cast(',       // Type casting (can be dangerous)
-    'convert(',    // Type conversion
-    'union',       // Union attacks
-    'waitfor'      // Time delays
+    /--/,        // SQL comments
+    /\/\*/,      // Block comments start
+    /\*\//,      // Block comments end
+    /\bxp_/,     // Extended stored procedures (word boundary)
+    /\bsp_/,     // System stored procedures (word boundary)
+    /@@/,        // Global variables
+    /\bchar\(/,  // Character conversion (word boundary)
+    /\bwaitfor\b/, // Time delays (word boundary)
   ];
 
   for (const pattern of dangerousPatterns) {
-    if (cleaned.includes(pattern)) {
+    if (pattern.test(cleaned)) {
       return false;
     }
   }

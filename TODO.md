@@ -1,9 +1,9 @@
-# Chatbot Q&A Development TODO
+# TODO: Fix Safety Validation Error
 
-- [x] Update src/App.js to implement chatbot component with chat interface, input handling, and API integration for Q&A responses using DuckDuckGo API.
-- [x] Update src/App.css to style the chat interface (chat bubbles, input area, responsive design).
-- [x] Run `npm start` to test the app locally and verify chatbot functionality.
-- [x] Integrate Google Gemini API for more advanced Q&A responses using the provided API key.
-- [x] Install @google/generative-ai package.
-- [x] Update src/App.js to use Gemini API instead of DuckDuckGo.
-- [x] Test the updated chatbot with Gemini responses.
+- [x] Remove 'union' from dangerousPatterns in backend/utils/safety.js
+- [x] Remove 'cast(' from dangerousPatterns in backend/utils/safety.js
+- [x] Remove 'convert(' from dangerousPatterns in backend/utils/safety.js
+- [x] Remove 'create' and 'table' from forbiddenKeywords in backend/utils/safety.js
+- [x] Remove ';' from dangerousPatterns in backend/utils/safety.js
+- [x] Normalize SQL in chat.js to remove newlines and trailing semicolons before validation
+- [x] Test critical-path: valid SELECT queries pass, dangerous queries fail

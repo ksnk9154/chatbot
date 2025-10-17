@@ -1,70 +1,309 @@
-# Getting Started with Create React App
+# 🤖 Database Chatbot - Natural Language to SQL Query System
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A full-stack chatbot application that allows users to query a PostgreSQL database using natural language, powered by Google Gemini AI.
 
-## Available Scripts
+## 🚀 Features
 
-In the project directory, you can run:
+- **Natural Language Processing**: Ask questions in plain English
+- **Database Integration**: Connected to PostgreSQL with e-commerce schema
+- **AI-Powered**: Uses Google Gemini AI to convert natural language to SQL
+- **Security First**: Read-only queries with comprehensive safety validation
+- **Real-time Chat Interface**: Clean, responsive React frontend
+- **RESTful API**: Express.js backend with proper error handling
 
-### `npm start`
+## 📁 Project Structure
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+```
+chatbot/
+├── frontend/                 # React application
+│   ├── src/
+│   │   ├── App.js           # Main chat component
+│   │   ├── App.css          # Styling
+│   │   └── index.js         # React entry point
+│   ├── public/              # Static files
+│   └── package.json         # Frontend dependencies
+├── backend/                 # Node.js API server
+│   ├── routes/
+│   │   └── chat.js         # Chat API endpoints
+│   ├── utils/
+│   │   └── safety.js       # SQL safety validation
+│   ├── server.js           # Express server
+│   ├── db.js              # PostgreSQL connection
+│   ├── package.json       # Backend dependencies
+│   └── .env.example       # Environment variables template
+└── README.md              # This file
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 🛠️ Installation & Setup
 
-### `npm test`
+### Prerequisites
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- Node.js (v14 or higher)
+- PostgreSQL (v12 or higher)
+- Google Gemini API key
 
-### `npm run build`
+### 1. Clone and Install
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+# Clone the repository
+git clone https://github.com/ksnk9154/chatbot.git
+cd chatbot
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+# Install frontend dependencies
+npm install
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+# Install backend dependencies
+cd backend
+npm install
+```
 
-### `npm run eject`
+### 2. Database Setup
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Create a PostgreSQL database and set up the schema using the provided setup script:
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+# From the backend directory
+cd backend
+node setup.js
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+This will create all necessary tables and populate them with sample data. The setup script includes:
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+- **Tables**: customers, products, orders, order_items
+- **Sample Data**: 10 customers, 10 products, 15 orders, 20 order items
+- **Relationships**: Proper foreign key constraints between tables
 
-## Learn More
+**Manual Setup (Alternative)**
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+If you prefer to run the SQL manually, create a PostgreSQL database and run the following schema:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```sql
+-- Drop tables if they exist (for clean setup)
+DROP TABLE IF EXISTS order_items CASCADE;
+DROP TABLE IF EXISTS orders CASCADE;
+DROP TABLE IF EXISTS products CASCADE;
+DROP TABLE IF EXISTS customers CASCADE;
 
-### Code Splitting
+-- Customers table
+CREATE TABLE customers (
+    customer_id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100),
+    phone VARCHAR(20),
+    address VARCHAR(255),
+    created_at TIMESTAMP
+);
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+-- Products table
+CREATE TABLE products (
+    product_id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    category VARCHAR(50),
+    price NUMERIC(10,2),
+    stock INT,
+    created_at TIMESTAMP
+);
 
-### Analyzing the Bundle Size
+-- Orders table
+CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY,
+    customer_id INT REFERENCES customers(customer_id),
+    order_date TIMESTAMP,
+    total_amount NUMERIC(10,2),
+    status VARCHAR(50)
+);
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+-- Order_Items table
+CREATE TABLE order_items (
+    item_id SERIAL PRIMARY KEY,
+    order_id INT REFERENCES orders(order_id),
+    product_id INT REFERENCES products(product_id),
+    quantity INT,
+    subtotal NUMERIC(10,2)
+);
 
-### Making a Progressive Web App
+-- Insert sample data (10 customers, 10 products, 15 orders, 20 order items)
+-- See backend/setup.js for complete INSERT statements
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### 3. Environment Configuration
 
-### Advanced Configuration
+In the `backend` directory, copy `.env.example` to `.env`:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+```bash
+cd backend
+cp .env.example .env
+```
 
-### Deployment
+Update the `.env` file with your credentials:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+```env
+PORT=5000
+DATABASE_URL=postgresql://username:password@localhost:5432/your_database
+GOOGLE_API_KEY=your_google_gemini_api_key
+MODEL_ID=gemini-2.0-flash
+NODE_ENV=development
+```
 
-### `npm run build` fails to minify
+### 4. Start the Application
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+#### Start Backend (Terminal 1):
+```bash
+cd backend
+npm start
+```
+
+#### Start Frontend (Terminal 2):
+```bash
+# From project root
+npm start
+```
+
+The application will be available at:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:5000
+
+## 💬 Usage Examples
+
+Try asking these natural language questions:
+
+### Basic Queries
+- "Show all customers"
+- "List all products"
+- "Display all orders"
+
+### Filtered Queries
+- "Show products with price greater than 1000"
+- "Find customers from Bangalore"
+- "List Electronics products"
+- "Show pending orders"
+
+### Complex Queries
+- "Find orders for Alice Johnson"
+- "Show products that are out of stock"
+- "List customers who have placed orders"
+- "Show total sales by product category"
+
+## 🔌 API Endpoints
+
+### POST /api/chat
+Send natural language questions to query the database.
+
+**Request:**
+```json
+{
+  "message": "Show all products in Electronics category"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "query": "SELECT * FROM products WHERE category = 'Electronics' LIMIT 100",
+  "execution_time_ms": 45,
+  "results": {
+    "count": 2,
+    "message": "Found 2 result(s).",
+    "data": [...]
+  }
+}
+```
+
+### GET /api/test
+Test backend connectivity (database + AI).
+
+### GET /health
+Simple health check endpoint.
+
+## 🛡️ Security Features
+
+- **Read-Only Queries**: Only SELECT statements allowed
+- **SQL Injection Protection**: Comprehensive keyword filtering
+- **Query Sanitization**: Automatic LIMIT addition
+- **Input Validation**: Strict validation of user inputs
+- **Error Handling**: Safe error messages without exposing internals
+
+## 🔧 Technical Stack
+
+### Frontend
+- **React** - UI framework
+- **CSS3** - Styling with modern design
+- **Fetch API** - HTTP client
+
+### Backend
+- **Node.js** - Runtime environment
+- **Express.js** - Web framework
+- **PostgreSQL** - Database
+- **Google Gemini AI** - Natural language processing
+- **CORS** - Cross-origin requests
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+1. **"Connection Error" in frontend**
+   - Make sure backend is running on port 5000
+   - Check if PostgreSQL is running
+   - Verify .env configuration
+
+2. **"Database table not found"**
+   - Run the database schema setup SQL
+   - Check DATABASE_URL in .env file
+
+3. **"API key not configured"**
+   - Add your Google Gemini API key to .env
+   - Restart the backend server
+
+### Database Connection Issues
+
+```bash
+# Test PostgreSQL connection
+psql -h localhost -U your_username -d your_database -c "SELECT NOW();"
+
+# Check if tables exist
+psql -h localhost -U your_username -d your_database -c "\dt"
+```
+
+## 📝 Development
+
+### Adding New Tables
+
+1. Create the table in your PostgreSQL database
+2. Update the schema description in `backend/routes/chat.js`
+3. Test with natural language queries
+
+### Customizing the UI
+
+- Modify `src/App.css` for styling changes
+- Update `src/App.js` for functionality changes
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🆘 Support
+
+For issues and questions:
+1. Check the troubleshooting section
+2. Look at existing GitHub issues
+3. Create a new issue with detailed information
+
+## 🔄 Updates
+
+- **v1.0.0**: Initial release with basic chatbot functionality
+- **v1.1.0**: Added PostgreSQL integration and natural language processing
+- **v1.2.0**: Enhanced security features and error handling
+- **v1.3.0**: Fixed safety validation to allow legitimate SELECT operations (CAST, UNION, etc.) while maintaining security
+
+---
+
+**Happy Querying! 🚀**

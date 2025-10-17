@@ -95,8 +95,12 @@ router.post('/chat', async (req, res) => {
     const rawSQL = await generateSQLFromNL(message);
     console.log(`🤖 Generated SQL: ${rawSQL}`);
 
+    // Normalize SQL to single line for safety validation
+    const normalizedSQL = rawSQL.replace(/\s+/g, ' ').trim().replace(/;$/, '');
+    console.log(`🔧 Normalized SQL: ${normalizedSQL}`);
+
     // Safety validation
-    if (!isSelectOnly(rawSQL)) {
+    if (!isSelectOnly(normalizedSQL)) {
       return res.status(400).json({
         error: 'Generated query failed safety validation. Only SELECT queries are allowed.',
         generated_sql: rawSQL,
@@ -167,6 +171,7 @@ router.get('/test', async (req, res) => {
         api_key_configured: !!apiKey
       }
     });
+
   } catch (error) {
     res.status(500).json({
       success: false,
