@@ -78,15 +78,17 @@
 .message {
   margin-bottom: 15px;
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   animation: slideIn 0.3s ease-out;
 }
 
 .message.user {
-  justify-content: flex-end;
+  align-items: flex-end;
 }
 
 .message.bot {
-  justify-content: flex-start;
+  align-items: flex-start;
 }
 
 .message-text {
@@ -96,6 +98,21 @@
   word-wrap: break-word;
   line-height: 1.4;
   font-size: 0.95em;
+  margin-bottom: 8px;
+}
+
+.result-info {
+  background: none;
+  color: #555;
+  font-weight: 500;
+  text-align: center;
+  margin: 10px 0 5px;
+  padding: 0;
+  box-shadow: none;
+}
+
+.result-info::before {
+  content: "📊 ";
 }
 
 .message.user .message-text {
@@ -166,6 +183,46 @@
 .chat-input input:disabled {
   background-color: #f8f9fa;
   color: #6c757d;
+}
+
+.table-container {
+  width: 100%;
+  margin-top: 10px;
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background-color: white;
+}
+
+.table-container table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.table-container th,
+.table-container td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.table-container th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+}
+
+.table-container tbody tr:hover {
+  background-color: #f1f3f4;
+}
+
+.chart-container {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid #ddd;
 }
 
 @keyframes slideIn {
