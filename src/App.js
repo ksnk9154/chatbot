@@ -21,17 +21,20 @@ function App() {
 
     const userMessage = { text: input, sender: 'user' };
     setMessages(prev => [...prev, userMessage]);
+    const messageToSend = input.trim();
     setInput('');
     setLoading(true);
 
     try {
       // Call the backend API instead of Gemini directly
+      const requestBody = { message: messageToSend };
+
       const response = await fetch('http://localhost:5000/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
@@ -74,7 +77,20 @@ function App() {
                 }
               } else {
                 // Use bar chart for general numerical data
-                chartData = results.map((row, index) => ({ name: row.name || row.category || `Row ${index + 1}`, ...row }));
+                chartData = results.map((row, index) => {
+                  const name = row.name || row.category || `Row ${index + 1}`;
+                  const chartRow = { name };
+                  // Include numeric columns and string columns that contain numbers
+                  keys.forEach(key => {
+                    if (typeof results[0][key] === 'number') {
+                      chartRow[key] = row[key];
+                    } else if (typeof results[0][key] === 'string' && /^\d+(\.\d+)?$/.test(results[0][key])) {
+                      // Include string columns that look like numbers (e.g., "65000.00")
+                      chartRow[key] = row[key];
+                    }
+                  });
+                  return chartRow;
+                });
                 chartType = 'bar';
               }
             }
@@ -174,39 +190,64 @@ function App() {
               )}
               {msg.chartData && msg.chartData.length > 0 && (
                 <div className="chart-container">
-                  <ResponsiveContainer width="100%" height={300}>
-                    {msg.chartType === 'pie' ? (
-                      <PieChart>
-                        <Pie
-                          data={msg.chartData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {msg.chartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={`#${(index * 123456 % 0xffffff).toString(16).padStart(6, '0')}`} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    ) : (
-                      <BarChart data={msg.chartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        {msg.chartData && msg.chartData.length > 0 && Object.keys(msg.chartData[0]).filter(key => key !== 'name' && typeof msg.chartData[0][key] === 'number').map((key, idx) => (
-                          <Bar key={key} dataKey={key} fill={`#${(idx * 123456 % 0xffffff).toString(16).padStart(6, '0')}`} name={key.charAt(0).toUpperCase() + key.slice(1)} />
-                        ))}
-                      </BarChart>
-                    )}
-                  </ResponsiveContainer>
+                  {(() => {
+                    // Fix values: parse string into number
+                    const fixedData = msg.chartData.map(d => {
+                      const fixed = { ...d };
+                      Object.keys(fixed).forEach(key => {
+                        if (key !== 'name' && typeof fixed[key] === 'string') {
+                          // Extract numbers from the string
+                          const nums = fixed[key].match(/\d+(\.\d+)?/g);
+                          if (nums && nums.length > 0) {
+                            fixed[key] = parseFloat(nums[0]); // Use first number
+                          } else {
+                            fixed[key] = 0;
+                          }
+                        }
+                      });
+                      return fixed;
+                    });
 
+                    return (
+                      <>
+                        {(!fixedData || fixedData.length === 0) && (
+                          <div style={{color:"gray", textAlign:"center"}}>No chart data to display</div>
+                        )}
+                        <ResponsiveContainer width="100%" height={300}>
+                          {msg.chartType === 'pie' ? (
+                            <PieChart>
+                              <Pie
+                                data={fixedData}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                outerRadius={80}
+                                fill="#8884d8"
+                                dataKey="value"
+                              >
+                                {fixedData.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={`#${(index * 123456 % 0xffffff).toString(16).padStart(6, '0')}`} />
+                                ))}
+                              </Pie>
+                              <Tooltip />
+                            </PieChart>
+                          ) : (
+                            <BarChart data={fixedData}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="name" />
+                              <YAxis />
+                              <Tooltip />
+                              <Legend />
+                              {Object.keys(fixedData[0]).filter(key => key !== 'name' && typeof fixedData[0][key] === 'number').map((key, idx) => (
+                                <Bar key={key} dataKey={key} fill={`#${(idx * 123456 % 0xffffff).toString(16).padStart(6, '0')}`} name={key.charAt(0).toUpperCase() + key.slice(1)} />
+                              ))}
+                            </BarChart>
+                          )}
+                        </ResponsiveContainer>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>

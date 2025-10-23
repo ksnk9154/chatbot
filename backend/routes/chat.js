@@ -82,7 +82,8 @@ router.post('/chat', async (req, res) => {
 
     // Validate input
     if (!message || !message.trim()) {
-      return res.status(400).json({ 
+      return res.status(400).json({
+        success: false,
         error: 'Message is required',
         example: '{"message": "Show all products"}'
       });
@@ -101,6 +102,7 @@ router.post('/chat', async (req, res) => {
     // Safety validation
     if (!isSelectOnly(normalizedSQL)) {
       return res.status(400).json({
+        success: false,
         error: 'Generated query failed safety validation. Only SELECT queries are allowed.',
         generated_sql: rawSQL,
         reason: 'Query contains potentially dangerous operations'
@@ -131,19 +133,22 @@ router.post('/chat', async (req, res) => {
   } catch (error) {
     console.error('❌ Error in /api/chat:', error);
 
-    // Return appropriate error response
+    // Return appropriate error response with success: false
     if (error.message.includes('relation') && error.message.includes('does not exist')) {
       res.status(400).json({
+        success: false,
         error: 'Database table not found. Please check if your database schema is set up correctly.',
         details: error.message
       });
     } else if (error.message.includes('syntax error')) {
       res.status(400).json({
+        success: false,
         error: 'Generated SQL has syntax errors.',
         details: error.message
       });
     } else {
       res.status(500).json({
+        success: false,
         error: 'Internal server error',
         message: error.message
       });
