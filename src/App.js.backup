@@ -44,24 +44,9 @@ function App() {
           const count = data.results.count;
 
           if (count > 0 && results.length > 0) {
-            // Data normalization: Convert string numbers to actual numbers
-            const keys = Object.keys(results[0]);
-            const normalizedResults = results.map(row => {
-              const normalizedRow = {};
-              keys.forEach(key => {
-                const value = row[key];
-                // Convert string numbers to actual numbers
-                if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) {
-                  normalizedRow[key] = parseFloat(value);
-                } else {
-                  normalizedRow[key] = value;
-                }
-              });
-              return normalizedRow;
-            });
-
             // Check if data is suitable for charts (e.g., has numerical values)
-            const hasNumbers = keys.some(key => typeof normalizedResults[0][key] === 'number');
+            const keys = Object.keys(results[0]);
+            const hasNumbers = keys.some(key => typeof results[0][key] === 'number');
 
             // Determine chart type based on data characteristics
             let chartType = null;
@@ -69,20 +54,20 @@ function App() {
 
             if (hasNumbers) {
               // Check if this looks like categorical data (few unique values in a text column)
-              const textColumns = keys.filter(key => typeof normalizedResults[0][key] === 'string');
+              const textColumns = keys.filter(key => typeof results[0][key] === 'string');
               const isCategorical = textColumns.some(col => {
-                const uniqueValues = new Set(normalizedResults.map(row => row[col])).size;
-                return uniqueValues <= 5 && uniqueValues < normalizedResults.length * 0.3; // Very strict: less than 5 unique values and less than 30% unique
+                const uniqueValues = new Set(results.map(row => row[col])).size;
+                return uniqueValues <= 5 && uniqueValues < results.length * 0.3; // Very strict: less than 5 unique values and less than 30% unique
               });
 
-              if (isCategorical && textColumns.length > 0 && normalizedResults.length > 5) {
+              if (isCategorical && textColumns.length > 0 && results.length > 5) {
                 // Use pie chart only for truly categorical data with many rows
                 const categoryCol = textColumns.find(col => col.toLowerCase().includes('category')) || textColumns[0]; // Prefer 'category' column
-                const valueCol = keys.find(key => key.toLowerCase().includes('price') || key.toLowerCase().includes('stock')) || keys.find(key => typeof normalizedResults[0][key] === 'number'); // Prefer price/stock
+                const valueCol = keys.find(key => key.toLowerCase().includes('price') || key.toLowerCase().includes('stock')) || keys.find(key => typeof results[0][key] === 'number'); // Prefer price/stock
 
                 if (valueCol) {
                   const aggregatedData = {};
-                  normalizedResults.forEach(row => {
+                  results.forEach(row => {
                     const category = row[categoryCol] || 'Other';
                     aggregatedData[category] = (aggregatedData[category] || 0) + (row[valueCol] || 0);
                   });
@@ -92,12 +77,15 @@ function App() {
                 }
               } else {
                 // Use bar chart for general numerical data
-                chartData = normalizedResults.map((row, index) => {
+                chartData = results.map((row, index) => {
                   const name = row.name || row.category || `Row ${index + 1}`;
                   const chartRow = { name };
-                  // Include only numeric columns
+                  // Include numeric columns and string columns that contain numbers
                   keys.forEach(key => {
-                    if (typeof normalizedResults[0][key] === 'number') {
+                    if (typeof results[0][key] === 'number') {
+                      chartRow[key] = row[key];
+                    } else if (typeof results[0][key] === 'string' && /^\d+(\.\d+)?$/.test(results[0][key])) {
+                      // Include string columns that look like numbers (e.g., "65000.00")
                       chartRow[key] = row[key];
                     }
                   });
@@ -110,7 +98,7 @@ function App() {
             const botMessage = {
               text: `Found ${count} result(s).`,
               sender: 'bot',
-              tableData: normalizedResults,
+              tableData: results,
               chartData: chartData,
               chartType: chartType
             };
@@ -202,48 +190,64 @@ function App() {
               )}
               {msg.chartData && msg.chartData.length > 0 && (
                 <div className="chart-container">
-                  <div style={{ padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '5px', marginBottom: '10px' }}>
-                    <strong>Chart Data:</strong> {msg.chartData.length} items, Type: {msg.chartType}
-                    {msg.chartData[0] && (
-                      <div>
-                        <strong>Keys:</strong> {Object.keys(msg.chartData[0]).join(', ')}
-                        <br />
-                        <strong>Sample:</strong> {JSON.stringify(msg.chartData[0]).substring(0, 100)}...
-                      </div>
-                    )}
-                  </div>
-                  <ResponsiveContainer width="100%" height={300}>
-                    {msg.chartType === 'pie' ? (
-                      <PieChart>
-                        <Pie
-                          data={msg.chartData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {msg.chartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={`#${(index * 123456 % 0xffffff).toString(16).padStart(6, '0')}`} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    ) : (
-                      <BarChart data={msg.chartData.slice(0, 10)}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        {Object.keys(msg.chartData[0] || {}).filter(key => key !== 'name' && typeof (msg.chartData[0] || {})[key] === 'number').map((key, idx) => (
-                          <Bar key={key} dataKey={key} fill={`#${(idx * 123456 % 0xffffff).toString(16).padStart(6, '0')}`} name={key.charAt(0).toUpperCase() + key.slice(1)} isAnimationActive={false} />
-                        ))}
-                      </BarChart>
-                    )}
-                  </ResponsiveContainer>
+                  {(() => {
+                    // Fix values: parse string into number
+                    const fixedData = msg.chartData.map(d => {
+                      const fixed = { ...d };
+                      Object.keys(fixed).forEach(key => {
+                        if (key !== 'name' && typeof fixed[key] === 'string') {
+                          // Extract numbers from the string
+                          const nums = fixed[key].match(/\d+(\.\d+)?/g);
+                          if (nums && nums.length > 0) {
+                            fixed[key] = parseFloat(nums[0]); // Use first number
+                          } else {
+                            fixed[key] = 0;
+                          }
+                        }
+                      });
+                      return fixed;
+                    });
+
+                    return (
+                      <>
+                        {(!fixedData || fixedData.length === 0) && (
+                          <div style={{color:"gray", textAlign:"center"}}>No chart data to display</div>
+                        )}
+                        <ResponsiveContainer width="100%" height={300}>
+                          {msg.chartType === 'pie' ? (
+                            <PieChart>
+                              <Pie
+                                data={fixedData}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                outerRadius={80}
+                                fill="#8884d8"
+                                dataKey="value"
+                              >
+                                {fixedData.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={`#${(index * 123456 % 0xffffff).toString(16).padStart(6, '0')}`} />
+                                ))}
+                              </Pie>
+                              <Tooltip />
+                            </PieChart>
+                          ) : (
+                            <BarChart data={fixedData}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="name" />
+                              <YAxis />
+                              <Tooltip />
+                              <Legend />
+                              {Object.keys(fixedData[0]).filter(key => key !== 'name' && typeof fixedData[0][key] === 'number').map((key, idx) => (
+                                <Bar key={key} dataKey={key} fill={`#${(idx * 123456 % 0xffffff).toString(16).padStart(6, '0')}`} name={key.charAt(0).toUpperCase() + key.slice(1)} />
+                              ))}
+                            </BarChart>
+                          )}
+                        </ResponsiveContainer>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>
