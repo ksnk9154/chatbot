@@ -225,6 +225,19 @@
   border: 1px solid #ddd;
 }
 
+.chart-container button {
+  padding: 5px 10px;
+  margin-right: 5px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.chart-container button:hover {
+  background-color: #f0f0f0;
+}
+
 @keyframes slideIn {
   from {
     opacity: 0;

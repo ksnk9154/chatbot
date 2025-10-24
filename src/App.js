@@ -1,12 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Brush } from 'recharts';
+import domtoimage from 'dom-to-image';
 import './App.css';
 
 function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [zoomLevels, setZoomLevels] = useState({});
   const messagesEndRef = useRef(null);
+  const chartRefs = useRef([]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -144,6 +147,33 @@ function App() {
     }
   };
 
+  const handleZoomIn = (messageIndex) => {
+    setZoomLevels(prev => ({
+      ...prev,
+      [messageIndex]: (prev[messageIndex] || 1) + 0.2
+    }));
+  };
+
+  const handleZoomOut = (messageIndex) => {
+    setZoomLevels(prev => ({
+      ...prev,
+      [messageIndex]: Math.max(0.5, (prev[messageIndex] || 1) - 0.2)
+    }));
+  };
+
+  const handleDownload = async (chartRef, messageIndex) => {
+    if (!chartRef) return;
+    try {
+      const dataUrl = await domtoimage.toPng(chartRef);
+      const link = document.createElement('a');
+      link.download = `chart_${messageIndex}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (error) {
+      console.error('Download failed:', error);
+    }
+  };
+
   return (
     <div className="App">
       <div className="chat-container">
@@ -211,39 +241,47 @@ function App() {
                         <strong>Sample:</strong> {JSON.stringify(msg.chartData[0]).substring(0, 100)}...
                       </div>
                     )}
+                    <div style={{ marginTop: '10px' }}>
+                      <button onClick={() => handleZoomIn(index)} style={{ marginRight: '5px' }} title="Zoom In">🔍+</button>
+                      <button onClick={() => handleZoomOut(index)} style={{ marginRight: '5px' }} title="Zoom Out">🔍-</button>
+                      <button onClick={() => handleDownload(chartRefs.current[index], index)} title="Download">📥</button>
+                    </div>
                   </div>
-                  <ResponsiveContainer width="100%" height={300}>
-                    {msg.chartType === 'pie' ? (
-                      <PieChart>
-                        <Pie
-                          data={msg.chartData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {msg.chartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={`#${(index * 123456 % 0xffffff).toString(16).padStart(6, '0')}`} />
+                  <div ref={(el) => chartRefs.current[index] = el}>
+                    <ResponsiveContainer width="100%" height={300 * (zoomLevels[index] || 1)}>
+                      {msg.chartType === 'pie' ? (
+                        <PieChart>
+                          <Pie
+                            data={msg.chartData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                            outerRadius={80 * (zoomLevels[index] || 1)}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {msg.chartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={`#${(index * 123456 % 0xffffff).toString(16).padStart(6, '0')}`} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      ) : (
+                        <BarChart data={msg.chartData.slice(0, 10)}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Brush dataKey="name" height={30} stroke="#8884d8" />
+                          {Object.keys(msg.chartData[0] || {}).filter(key => key !== 'name' && typeof (msg.chartData[0] || {})[key] === 'number').map((key, idx) => (
+                            <Bar key={key} dataKey={key} fill={`#${(idx * 123456 % 0xffffff).toString(16).padStart(6, '0')}`} name={key.charAt(0).toUpperCase() + key.slice(1)} isAnimationActive={false} />
                           ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    ) : (
-                      <BarChart data={msg.chartData.slice(0, 10)}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        {Object.keys(msg.chartData[0] || {}).filter(key => key !== 'name' && typeof (msg.chartData[0] || {})[key] === 'number').map((key, idx) => (
-                          <Bar key={key} dataKey={key} fill={`#${(idx * 123456 % 0xffffff).toString(16).padStart(6, '0')}`} name={key.charAt(0).toUpperCase() + key.slice(1)} isAnimationActive={false} />
-                        ))}
-                      </BarChart>
-                    )}
-                  </ResponsiveContainer>
+                        </BarChart>
+                      )}
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               )}
             </div>
