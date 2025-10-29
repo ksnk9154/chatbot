@@ -1,11 +1,11 @@
 // safety.js - SQL safety validation for read-only operations
 
 /**
- * Validates if a SQL query is safe (SELECT-only)
+ * Validates if a SQL query is safe (SELECT, INSERT, UPDATE, DELETE only)
  * @param {string} sql - The SQL query to validate
  * @returns {boolean} - True if safe, false otherwise
  */
-function isSelectOnly(sql) {
+function isSafeQuery(sql) {
   if (!sql || typeof sql !== 'string') {
     return false;
   }
@@ -13,15 +13,16 @@ function isSelectOnly(sql) {
   // Clean and normalize the SQL
   const cleaned = sql.trim().toLowerCase();
 
-  // Must start with SELECT
-  if (!cleaned.startsWith('select')) {
+  // Must start with SELECT, INSERT, UPDATE, or DELETE
+  const allowedStarts = ['select', 'insert', 'update', 'delete'];
+  const startsWithAllowed = allowedStarts.some(start => cleaned.startsWith(start));
+  if (!startsWithAllowed) {
     return false;
   }
 
   // List of dangerous keywords that should not be present
   const forbiddenKeywords = [
-    'insert', 'update', 'delete', 'drop', 'truncate', 'alter',
-    'grant', 'revoke', 'commit', 'rollback', 'begin',
+    'drop', 'truncate', 'alter', 'grant', 'revoke', 'commit', 'rollback', 'begin',
     'transaction', 'lock', 'unlock', 'exec', 'execute', 'call',
     'procedure', 'function', 'trigger', 'index', 'view', 'schema',
     'database', 'constraint', 'sequence'
@@ -52,6 +53,13 @@ function isSelectOnly(sql) {
     }
   }
 
+  // Additional safety: UPDATE and DELETE must have WHERE clause
+  if (cleaned.startsWith('update') || cleaned.startsWith('delete')) {
+    if (!cleaned.includes(' where ')) {
+      return false; // UPDATE/DELETE without WHERE is too dangerous
+    }
+  }
+
   return true;
 }
 
@@ -68,4 +76,4 @@ function sanitizeQuery(sql) {
   return cleaned;
 }
 
-export { isSelectOnly, sanitizeQuery };
+export { isSafeQuery, sanitizeQuery };

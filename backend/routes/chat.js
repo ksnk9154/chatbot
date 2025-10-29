@@ -1,8 +1,9 @@
 import express from 'express';
-const router = express.Router();
 import db from '../db.js';
-import { isSelectOnly, sanitizeQuery } from '../utils/safety.js';
+import { isSafeQuery, sanitizeQuery } from '../utils/safety.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+
+const router = express.Router();
 
 // Initialize Gemini AI
 const apiKey = process.env.GOOGLE_API_KEY;
@@ -21,7 +22,26 @@ const model = genAI.getGenerativeModel({ model: modelId });
  * @returns {string} - Generated SQL query
  */
 async function generateSQLFromNL(nlQuestion) {
-  const prompt = `You are a PostgreSQL expert. Convert the following natural language question to a SELECT query.
+  const firstWord = nlQuestion.trim().split(' ')[0].toLowerCase();
+
+  let operationType;
+  if (['add', 'create', 'insert', 'new', 'make', 'generate'].includes(firstWord)) {
+    operationType = 'INSERT';
+  } else if (['update', 'change', 'modify'].includes(firstWord)) {
+    operationType = 'UPDATE';
+  } else if (['delete', 'remove'].includes(firstWord)) {
+    operationType = 'DELETE';
+  } else {
+    operationType = 'SELECT';
+  }
+
+  console.log(`Detected operation: ${operationType}`);
+
+  let prompt;
+  if (operationType === 'INSERT') {
+    prompt = `Generate an INSERT SQL query for: "${nlQuestion}"
+
+Example: For "add new customer", generate INSERT INTO customers (name, email, phone, address) VALUES ('John Doe', 'john@example.com', '1234567890', 'New York, USA');
 
 Database Schema:
 - customers: customer_id (SERIAL PRIMARY KEY), name (VARCHAR), email (VARCHAR), phone (VARCHAR), address (TEXT), created_at (TIMESTAMP)
@@ -29,15 +49,50 @@ Database Schema:
 - orders: order_id (SERIAL PRIMARY KEY), customer_id (INT), order_date (TIMESTAMP), total_amount (NUMERIC), status (VARCHAR)
 - order_items: item_id (SERIAL PRIMARY KEY), order_id (INT), product_id (INT), quantity (INT), subtotal (NUMERIC)
 
-Rules:
-1. Return ONLY a valid PostgreSQL SELECT query
-2. Do NOT include explanations or markdown formatting
-3. Use proper table joins when needed
-4. Use exact column names from the schema
+Use realistic sample values for all required columns (exclude SERIAL PRIMARY KEY and TIMESTAMP).
 
-Question: "${nlQuestion}"
+Return ONLY the INSERT SQL query:`;
+  } else if (operationType === 'UPDATE') {
+    prompt = `Generate an UPDATE SQL query for: "${nlQuestion}"
 
-SQL Query:`;
+Example: For "update customer email", generate UPDATE customers SET email = 'newemail@example.com' WHERE customer_id = 1;
+
+Database Schema:
+- customers: customer_id (SERIAL PRIMARY KEY), name (VARCHAR), email (VARCHAR), phone (VARCHAR), address (TEXT), created_at (TIMESTAMP)
+- products: product_id (SERIAL PRIMARY KEY), name (VARCHAR), category (VARCHAR), price (NUMERIC), stock (INT), created_at (TIMESTAMP)
+- orders: order_id (SERIAL PRIMARY KEY), customer_id (INT), order_date (TIMESTAMP), total_amount (NUMERIC), status (VARCHAR)
+- order_items: item_id (SERIAL PRIMARY KEY), order_id (INT), product_id (INT), quantity (INT), subtotal (NUMERIC)
+
+Include a WHERE condition to avoid affecting all records.
+
+Return ONLY the UPDATE SQL query:`;
+  } else if (operationType === 'DELETE') {
+    prompt = `Generate a DELETE SQL query for: "${nlQuestion}"
+
+Example: For "delete customer", generate DELETE FROM customers WHERE customer_id = 1;
+
+Database Schema:
+- customers: customer_id (SERIAL PRIMARY KEY), name (VARCHAR), email (VARCHAR), phone (VARCHAR), address (TEXT), created_at (TIMESTAMP)
+- products: product_id (SERIAL PRIMARY KEY), name (VARCHAR), category (VARCHAR), price (NUMERIC), stock (INT), created_at (TIMESTAMP)
+- orders: order_id (SERIAL PRIMARY KEY), customer_id (INT), order_date (TIMESTAMP), total_amount (NUMERIC), status (VARCHAR)
+- order_items: item_id (SERIAL PRIMARY KEY), order_id (INT), product_id (INT), quantity (INT), subtotal (NUMERIC)
+
+Include a WHERE condition to avoid affecting all records.
+
+Return ONLY the DELETE SQL query:`;
+  } else {
+    prompt = `Generate a SELECT SQL query for: "${nlQuestion}"
+
+Example: For "show all customers", generate SELECT * FROM customers;
+
+Database Schema:
+- customers: customer_id (SERIAL PRIMARY KEY), name (VARCHAR), email (VARCHAR), phone (VARCHAR), address (TEXT), created_at (TIMESTAMP)
+- products: product_id (SERIAL PRIMARY KEY), name (VARCHAR), category (VARCHAR), price (NUMERIC), stock (INT), created_at (TIMESTAMP)
+- orders: order_id (SERIAL PRIMARY KEY), customer_id (INT), order_date (TIMESTAMP), total_amount (NUMERIC), status (VARCHAR)
+- order_items: item_id (SERIAL PRIMARY KEY), order_id (INT), product_id (INT), quantity (INT), subtotal (NUMERIC)
+
+Return ONLY the SELECT SQL query:`;
+  }
 
   try {
     const result = await model.generateContent(prompt);
@@ -100,10 +155,10 @@ router.post('/chat', async (req, res) => {
     console.log(`🔧 Normalized SQL: ${normalizedSQL}`);
 
     // Safety validation
-    if (!isSelectOnly(normalizedSQL)) {
+    if (!isSafeQuery(normalizedSQL)) {
       return res.status(400).json({
         success: false,
-        error: 'Generated query failed safety validation. Only SELECT queries are allowed.',
+        error: 'Generated query failed safety validation. Only SELECT, INSERT, UPDATE, DELETE queries are allowed.',
         generated_sql: rawSQL,
         reason: 'Query contains potentially dangerous operations'
       });

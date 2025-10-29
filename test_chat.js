@@ -8,7 +8,7 @@ async function testChat() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        message: 'Show me all customers'
+        message: process.argv[2] || 'Show me all customers'
       }),
     });
 
