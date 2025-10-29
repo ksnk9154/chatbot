@@ -1,8 +1,8 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const db = require('../db');
-const { isSelectOnly, sanitizeQuery } = require('../utils/safety');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+import db from '../db.js';
+import { isSelectOnly, sanitizeQuery } from '../utils/safety.js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Initialize Gemini AI
 const apiKey = process.env.GOOGLE_API_KEY;
@@ -184,4 +184,4 @@ router.get('/test', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

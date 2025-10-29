@@ -68,7 +68,4 @@ function sanitizeQuery(sql) {
   return cleaned;
 }
 
-module.exports = {
-  isSelectOnly,
-  sanitizeQuery
-};
+export { isSelectOnly, sanitizeQuery };

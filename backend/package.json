@@ -1,6 +1,7 @@
 {
   "name": "chatbot-backend",
   "version": "1.0.0",
+  "type": "module",
   "description": "Backend for chatbot with PostgreSQL integration",
   "main": "server.js",
   "scripts": {

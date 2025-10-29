@@ -1,8 +1,10 @@
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import pool from './db.js';
+import chatRoute from './routes/chat.js';
 
-const chatRoute = require('./routes/chat');
+dotenv.config();
 
 const app = express();
 
@@ -14,8 +16,14 @@ app.use(express.json());
 app.use('/api', chatRoute);
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Chatbot backend is running!' });
+app.get('/health', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    res.json({ status: 'Connected to PostgreSQL', time: result.rows[0].now });
+  } catch (error) {
+    console.error('DB connection error:', error);
+    res.status(500).json({ error: 'Database connection failed' });
+  }
 });
 
 const PORT = process.env.PORT || 5000;
