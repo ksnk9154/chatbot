@@ -91,6 +91,13 @@ Database Schema:
 - orders: order_id (SERIAL PRIMARY KEY), customer_id (INT), order_date (TIMESTAMP), total_amount (NUMERIC), status (VARCHAR)
 - order_items: item_id (SERIAL PRIMARY KEY), order_id (INT), product_id (INT), quantity (INT), subtotal (NUMERIC)
 
+Rules:
+1. Return ONLY a valid PostgreSQL SELECT query
+2. Do NOT include explanations or markdown formatting
+3. Use proper table joins when needed
+4. Use exact column names from the schema
+5. Always assign column aliases for computed or unnamed columns, e.g., use "AS total" or "AS count" to replace ?column?
+
 Return ONLY the SELECT SQL query:`;
   }
 
@@ -158,7 +165,7 @@ router.post('/chat', async (req, res) => {
     if (!isSafeQuery(normalizedSQL)) {
       return res.status(400).json({
         success: false,
-        error: 'Generated query failed safety validation. Only SELECT, INSERT, UPDATE, DELETE queries are allowed.',
+        error: '⚠️ I can only read data for safety reasons. Please ask questions like "Show all products" or "List customers in Delhi".',
         generated_sql: rawSQL,
         reason: 'Query contains potentially dangerous operations'
       });

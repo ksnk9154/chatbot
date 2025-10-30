@@ -19,7 +19,7 @@ app.use('/api', chatRoute);
 app.get('/health', async (req, res) => {
   try {
     const result = await pool.query('SELECT NOW()');
-    res.json({ status: 'Connected to PostgreSQL', time: result.rows[0].now });
+    res.json({ status: 'Connected to Render PostgreSQL', time: result.rows[0].now });
   } catch (error) {
     console.error('DB connection error:', error);
     res.status(500).json({ error: 'Database connection failed' });
@@ -32,4 +32,5 @@ app.listen(PORT, () => {
   console.log(`🚀 Backend server running on http://localhost:${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`💬 Chat API: http://localhost:${PORT}/api/chat`);
+  console.log('\x1b[32m%s\x1b[0m', '✅ Connected to Render PostgreSQL database');
 });
