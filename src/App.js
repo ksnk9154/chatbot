@@ -8,6 +8,7 @@ function App() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [zoomLevels, setZoomLevels] = useState({});
+  const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
   const chartRefs = useRef([]);
 

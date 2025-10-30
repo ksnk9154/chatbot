@@ -1,12 +1,25 @@
-# TODO: Add Zoom and Download to Graphs
+# TODO: Fix Internal Error and Improve UX/UI
 
 ## Steps to Complete:
-- [x] Install html2canvas dependency
-- [x] Update src/App.js to add zoom controls and download functionality
-- [x] Update src/App.css for styling new elements
-- [x] Test zoom and download features in browser
+- [ ] Check and create .env file for backend with required variables (DATABASE_URL, GOOGLE_API_KEY, etc.)
+- [ ] Improve error handling in backend/server.js and backend/routes/chat.js for better debugging
+- [ ] Add database migration/setup script if tables don't exist
+- [ ] Improve UX in src/App.js: add loading indicators, better error messages, responsive design
+- [ ] Update src/App.css for better contrast, mobile responsiveness, and visual hierarchy
+- [ ] Add meta tags and SEO improvements to index.html
+- [ ] Test the site functionality after fixes
 
-## Details:
-- For BarChart: Add Brush component for zooming
-- For PieChart: Add manual zoom controls (increase/decrease size)
-- Download: Use html2canvas to capture chart as image and trigger download
+## Dependent Files to be edited:
+- backend/.env (create if missing)
+- backend/server.js (error handling)
+- backend/routes/chat.js (error responses)
+- backend/migrate.js (create for DB setup)
+- src/App.js (UX improvements)
+- src/App.css (styling)
+- public/index.html (meta tags)
+
+## Followup steps:
+- [ ] Run backend and test health endpoint
+- [ ] Test chat functionality with sample queries
+- [ ] Check mobile responsiveness
+- [ ] Verify charts and downloads work

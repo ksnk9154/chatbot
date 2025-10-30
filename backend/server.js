@@ -19,10 +19,23 @@ app.use('/api', chatRoute);
 app.get('/health', async (req, res) => {
   try {
     const result = await pool.query('SELECT NOW()');
-    res.json({ status: 'Connected to Render PostgreSQL', time: result.rows[0].now });
+    res.json({
+      status: 'Connected to PostgreSQL',
+      time: result.rows[0].now,
+      environment: {
+        node_version: process.version,
+        port: process.env.PORT || 5000,
+        database_url: process.env.DATABASE_URL ? 'configured' : 'missing',
+        google_api_key: process.env.GOOGLE_API_KEY ? 'configured' : 'missing'
+      }
+    });
   } catch (error) {
     console.error('DB connection error:', error);
-    res.status(500).json({ error: 'Database connection failed' });
+    res.status(500).json({
+      error: 'Database connection failed',
+      details: error.message,
+      troubleshooting: 'Check DATABASE_URL environment variable and database availability'
+    });
   }
 });
 
