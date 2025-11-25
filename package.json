@@ -18,7 +18,7 @@
   },
   "scripts": {
     "start": "cd backend && npm start",
-    "dev": "concurrently \"npm:start-frontend\" \"npm:start-backend\"",
+    "dev": "concurrently \"set PORT=3000 && npm run start-frontend\" \"npm run start-backend\"",
     "start-frontend": "react-scripts start",
     "start-backend": "cd backend && npm start",
     "build": "cd backend && npm install && cd .. && npm install",
