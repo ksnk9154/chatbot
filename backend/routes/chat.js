@@ -195,41 +195,24 @@ router.post('/chat', async (req, res) => {
   } catch (error) {
     console.error('❌ Error in /api/chat:', error);
 
-    let rawSQL = 'N/A'; // Default value in case it's not defined
-
     // Return appropriate error response with success: false
     if (error.message.includes('relation') && error.message.includes('does not exist')) {
       res.status(400).json({
         success: false,
-        error: 'Database table not found. Please run the migration script to set up your database schema.',
-        details: error.message,
-        suggestion: 'Run: node backend/migrate.js'
+        error: 'Database table not found. Please check if your database schema is set up correctly.',
+        details: error.message
       });
     } else if (error.message.includes('syntax error')) {
       res.status(400).json({
         success: false,
-        error: 'Generated SQL has syntax errors. Try rephrasing your question.',
-        details: error.message,
-        generated_sql: rawSQL
-      });
-    } else if (error.message.includes('GoogleGenerativeAI')) {
-      res.status(500).json({
-        success: false,
-        error: 'AI service unavailable. Please check GOOGLE_API_KEY configuration.',
-        details: 'Google Gemini API key may be missing or invalid'
-      });
-    } else if (error.code === 'ECONNREFUSED' || error.message.includes('connect')) {
-      res.status(500).json({
-        success: false,
-        error: 'Database connection failed. Please check your DATABASE_URL.',
+        error: 'Generated SQL has syntax errors.',
         details: error.message
       });
     } else {
       res.status(500).json({
         success: false,
-        error: 'Internal server error occurred while processing your request.',
-        message: error.message,
-        troubleshooting: 'Check server logs for more details'
+        error: 'Internal server error',
+        message: error.message
       });
     }
   }
