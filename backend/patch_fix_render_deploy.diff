@@ -1,0 +1,138 @@
+--- a/backend/server.js
++++ b/backend/server.js
+@@ -1,37 +1,53 @@
+-import express from 'express';
+-import cors from 'cors';
+-import dotenv from 'dotenv';
+-import pool from './db.js';
+-import chatRoute from './routes/chat.js';
+-
+-dotenv.config();
+-
+-const app = express();
+-
+-// Middleware
+-app.use(cors());
+-app.use(express.json());
+-
+-// Routes
+-app.use('/api', chatRoute);
+-
+-// Health check endpoint
+-app.get('/health', async (req, res) => {
+-  try {
+-    const result = await pool.query('SELECT NOW()');
+-    res.json({
+-      status: 'Connected to PostgreSQL',
+-      time: result.rows[0].now,
+-      environment: {
+-        node_version: process.version,
+-        port: process.env.PORT || 5000,
+-        database_url: process.env.DATABASE_URL ? 'configured' : 'missing',
+-        google_api_key: process.env.GOOGLE_API_KEY ? 'configured' : 'missing'
+-      }
+-    });
+-  } catch (error) {
+-    console.error('DB connection error:', error);
+-    res.status(500).json({
+-      error: 'Database connection failed',
+-      details: error.message,
+-      troubleshooting: 'Check DATABASE_URL environment variable and database availability'
+-    });
+-  }
+-});
+-
+-const PORT = process.env.PORT || 5000;
+-
+-app.listen(PORT, () => {
+-  console.log(`🚀 Backend server running on http://localhost:${PORT}`);
+-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
+-  console.log(`💬 Chat API: http://localhost:${PORT}/api/chat`);
+-  console.log('\x1b[32m%s\x1b[0m', '✅ Connected to Render PostgreSQL database');
+-});
++const express = require('express');
++const path = require('path');
++const fs = require('fs');
++
++const app = express();
++app.use(express.json());
++
++// --- load your routes (adjust path if your router is elsewhere) ---
++try {
++  const chatRouter = require('./routes/chat');
++  app.use('/api/chat', chatRouter);
++} catch (err) {
++  console.warn('Chat router not found or failed to load:', err.message);
++}
++
++// Health-check (keep your DB-check logic if you had it)
++app.get('/health', (req, res) => {
++  res.json({ ok: true, env: process.env.NODE_ENV || 'development' });
++});
++
++// Serve React build (expects build/ at repo root: ../build relative to backend/)
++const buildDir = path.join(__dirname, '..', 'build');
++
++if (fs.existsSync(buildDir)) {
++  app.use(express.static(buildDir));
++
++  // For any non-API route, serve index.html (SPA)
++  app.get('*', (req, res) => {
++    // Do not serve SPA for API or health endpoints
++    if (req.path.startsWith('/api') || req.path === '/health') {
++      return res.status(404).json({ error: 'Not found' });
++    }
++    res.sendFile(path.join(buildDir, 'index.html'));
++  });
++
++  console.log('✅ Serving static React build from', buildDir);
++} else {
++  // If build not present, fallback root to a friendly message
++  app.get('/', (req, res) => {
++    res.send('Backend running. No client build found.');
++  });
++}
++
++// Use Render-provided port (do NOT hardcode PORT=5000 in Render environment)
++const PORT = process.env.PORT || 5000;
++app.listen(PORT, () => {
++  console.log(`🚀 Backend server running on http://localhost:${PORT}`);
++  console.log(`📊 Health check: http://localhost:${PORT}/health`);
++  console.log(`💬 Chat API: http://localhost:${PORT}/api/chat`);
++});
+--- a/backend/package.json
++++ b/backend/package.json
+@@ -6,10 +6,15 @@
+   "type": "module",
+   "description": "Backend for chatbot with PostgreSQL integration",
+   "main": "server.js",
+-  "scripts": {
+-    "start": "node server.js",
+-    "dev": "nodemon server.js"
+-  },
++  "scripts": {
++    "start": "node server.js",
++    "dev": "nodemon server.js",
++    "postinstall": "cd .. && npm ci && npm run build"
++  },
+   "dependencies": {
+     "@google/generative-ai": "^0.7.1",
+     "cors": "^2.8.5",
+     "dotenv": "^16.6.1",
+     "express": "^4.21.2",
+     "pg": "^8.16.3"
+   },
+   "devDependencies": {
+-    "nodemon": "^3.0.1"
++    "nodemon": "^3.0.1"
+   },
+   "keywords": [
+     "chatbot",
+     "postgresql",
+     "gemini",
+     "ai",
+     "backend"
+   ],
+   "author": "",
+   "license": "MIT"
+ }
