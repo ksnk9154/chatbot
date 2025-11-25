@@ -15,23 +15,34 @@ A full-stack chatbot application that allows users to query a PostgreSQL databas
 
 ```
 chatbot/
-├── frontend/                 # React application
-│   ├── src/
-│   │   ├── App.js           # Main chat component
-│   │   ├── App.css          # Styling
-│   │   └── index.js         # React entry point
-│   ├── public/              # Static files
-│   └── package.json         # Frontend dependencies
-├── backend/                 # Node.js API server
+├── src/                     # React application source
+│   ├── App.js              # Main chat component
+│   ├── App.css             # Styling
+│   ├── index.js            # React entry point
+│   └── index.css           # Global styles
+├── public/                 # Static files
+│   └── index.html          # HTML template
+├── backend/                # Node.js API server
 │   ├── routes/
-│   │   └── chat.js         # Chat API endpoints
+│   │   └── chat.js        # Chat API endpoints
 │   ├── utils/
-│   │   └── safety.js       # SQL safety validation
-│   ├── server.js           # Express server
+│   │   └── safety.js      # SQL safety validation
+│   ├── server.js          # Express server
 │   ├── db.js              # PostgreSQL connection
+│   ├── setup.js           # Database setup script
 │   ├── package.json       # Backend dependencies
-│   └── .env.example       # Environment variables template
-└── README.md              # This file
+│   └── .env               # Environment variables (create from .env.example)
+├── build/                 # Production build output
+├── node_modules/          # Frontend dependencies
+├── package.json           # Root package.json with concurrently setup
+├── package-lock.json      # Frontend lockfile
+├── .env                   # Frontend environment variables (if needed)
+├── .gitignore            # Git ignore rules
+├── netlify.toml          # Netlify deployment config
+├── README.md             # This file
+├── test_chat.js          # Chat functionality tests
+├── test_safety.js        # Safety validation tests
+└── TODO.md               # Project tasks
 ```
 
 ## 🛠️ Installation & Setup
@@ -147,21 +158,30 @@ NODE_ENV=development
 
 ### 4. Start the Application
 
-#### Start Backend (Terminal 1):
-```bash
-cd backend
-npm start
-```
+To start both frontend and backend simultaneously:
 
-#### Start Frontend (Terminal 2):
 ```bash
 # From project root
 npm start
 ```
 
-The application will be available at:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:5000
+This will run:
+- Frontend on http://localhost:3000 (React dev server)
+- Backend on http://localhost:5000 (Express server)
+
+**Alternative:** If you need to run them separately:
+
+#### Start Backend only:
+```bash
+cd backend
+npm start
+```
+
+#### Start Frontend only:
+```bash
+# From project root
+npm run start-frontend
+```
 
 ## 💬 Usage Examples
 
