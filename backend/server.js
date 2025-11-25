@@ -19,13 +19,7 @@ app.use(express.json());
 // Routes
 app.use('/api', chatRoute);
 
-// Serve static files from the React app build directory
-app.use(express.static(path.join(__dirname, '../build')));
-
-// Catch all handler: send back React's index.html file for client-side routing
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../build/index.html'));
-});
+// API routes only - static files served by separate frontend deployment
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
