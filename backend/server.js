@@ -40,9 +40,10 @@ app.get('/health', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
+const HOST = '0.0.0.0';
 
-app.listen(PORT, () => {
-  console.log(`🚀 Backend server running on http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`🚀 Backend server running on http://localhost:${PORT} (bound to ${HOST})`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`💬 Chat API: http://localhost:${PORT}/api/chat`);
   console.log('\x1b[32m%s\x1b[0m', '✅ Connected to Render PostgreSQL database');
