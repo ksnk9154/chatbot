@@ -45,7 +45,35 @@ chatbot/
 └── TODO.md               # Project tasks
 ```
 
-## 🛠️ Installation & Setup
+## 🚀 Deployment on Render
+
+### Prerequisites
+
+- Render account
+- PostgreSQL database (Render managed or external)
+- Google Gemini API key
+
+### Render Deployment Steps
+
+1. **Connect Repository**: Connect your GitHub repository to Render
+
+2. **Create Web Service**:
+   - Choose "Web Service" from Render dashboard
+   - Connect your repository
+   - Set build command: `npm run build`
+   - Set start command: `npm start`
+
+3. **Environment Variables**: Add the following in Render's Environment settings:
+   ```
+   DATABASE_URL=postgresql://username:password@host:port/database
+   GOOGLE_API_KEY=your_google_gemini_api_key
+   MODEL_ID=gemini-2.0-flash
+   NODE_ENV=production
+   ```
+
+4. **Deploy**: Render will automatically build and deploy your application
+
+## 🛠️ Local Development Setup
 
 ### Prerequisites
 
