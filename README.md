@@ -186,11 +186,11 @@ NODE_ENV=development
 
 ### 4. Start the Application
 
-To start both frontend and backend simultaneously:
+To start both frontend and backend simultaneously for development:
 
 ```bash
 # From project root
-npm start
+npm run dev
 ```
 
 This will run:
