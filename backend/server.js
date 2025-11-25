@@ -1,5 +1,9 @@
-const express = require('express');
-const { Pool } = require('pg');
+// backend/server.js (ESM version)
+
+import express from 'express';
+import pg from 'pg';
+
+const { Pool } = pg;
 
 const app = express();
 app.use(express.json());
@@ -7,12 +11,14 @@ app.use(express.json());
 const PORT = process.env.PORT || 5000;
 const HOST = '0.0.0.0';
 
-// --- DB config & helpers ---
 const rawDbUrl = process.env.DATABASE_URL || process.env.DB_URL || '';
+
 function maskedConnString(url) {
   if (!url) return '(empty)';
-  // hide password between ':' and '@' for typical postgres URL
-  return url.replace(/(\/\/[^:]+:)([^@]+)(@)/, (_, a, p, b) => `${a}${'*'.repeat(8)}${b}`);
+  return url.replace(
+    /(\/\/[^:]+:)([^@]+)(@)/,
+    (_, a, p, b) => `${a}${'*'.repeat(8)}${b}`
+  );
 }
 
 console.log('▶ DATABASE_URL present?', !!rawDbUrl);
@@ -20,68 +26,77 @@ console.log('▶ DATABASE_URL (masked):', maskedConnString(rawDbUrl));
 
 const pool = new Pool({
   connectionString: rawDbUrl || undefined,
-  // Many managed DBs require SSL; the safest default for external is to require TLS but accept the CA-less connection.
-  // If you're inside Render using the internal host, you can remove ssl or set to false.
-  ssl: rawDbUrl && rawDbUrl.includes('.render.com') ? { rejectUnauthorized: false } : undefined,
-  // optional: connectionTimeoutMillis: 5000
+  ssl: rawDbUrl.includes('.render.com') ? { rejectUnauthorized: false } : undefined,
 });
 
 async function runDbHealthCheck() {
   if (!rawDbUrl) {
-    console.error('✖ No DATABASE_URL provided in environment. Skipping DB check.');
+    console.error('✖ No DATABASE_URL provided in environment.');
     return { ok: false, reason: 'no_database_url' };
   }
 
   try {
     const client = await pool.connect();
     try {
-      // useful quick diagnostics
-      const rows = await client.query(`
+      const info = await client.query(`
         SELECT 
-          now() AS now, 
-          current_database() AS db, 
-          inet_server_addr() AS server_ip, 
+          now() AS now,
+          current_database() AS db,
+          inet_server_addr() AS server_ip,
           version() AS pg_version;
       `);
-      const encRes = await client.query(`SHOW client_encoding;`);
-      console.log('✅ DB connection OK:', rows.rows[0]);
-      console.log('🔤 client_encoding:', encRes.rows[0].client_encoding);
-      return { ok: true, info: rows.rows[0], encoding: encRes.rows[0].client_encoding };
+
+      const enc = await client.query(`SHOW client_encoding;`);
+
+      console.log('✅ DB connection OK:', info.rows[0]);
+      console.log('🔤 client_encoding:', enc.rows[0].client_encoding);
+
+      return {
+        ok: true,
+        info: info.rows[0],
+        encoding: enc.rows[0].client_encoding,
+      };
     } finally {
       client.release();
     }
   } catch (err) {
-    // verbose but helpful errors (mask any url in message)
-    const safeErr = String(err).replace(/(postgresql:\/\/[^:]+:)([^@]+)(@)/, (_, a, p, b) => `${a}${'*'.repeat(8)}${b}`);
+    const safeErr = String(err).replace(
+      /(postgresql:\/\/[^:]+:)([^@]+)(@)/,
+      (_, a, p, b) => `${a}${'*'.repeat(8)}${b}`
+    );
+
     console.error('✖ DB connection failed:', safeErr);
-    // additional helpful info that commonly causes issues:
-    console.error('  - Is the DB host reachable? (DNS, firewall, VPC rules)');
-    console.error('  - Is SSL required? Try adding ?sslmode=require or ssl:{rejectUnauthorized:false}');
-    return { ok: false, error: err };
+    console.error('  - Check SSL (Render external DB requires it)');
+    console.error('  - Check password / rotated credentials');
+    console.error('  - Check DATABASE_URL is correctly set in Render');
+
+    return { ok: false, error: safeErr };
   }
 }
 
-// --- Routes ---
 app.get('/health', async (req, res) => {
-  const db = await runDbHealthCheck().catch(e => ({ ok: false, error: e }));
-  res.json({ status: 'ok', time: new Date().toISOString(), db });
+  const db = await runDbHealthCheck().catch((e) => ({
+    ok: false,
+    error: e.toString(),
+  }));
+
+  res.json({
+    status: 'ok',
+    time: new Date().toISOString(),
+    db,
+  });
 });
 
-app.post('/api/chat', (req, res) => {
-  // keep your chat implementation here
+app.post('/api/chat', async (req, res) => {
   res.json({ ok: true, msg: 'chat endpoint placeholder' });
 });
 
-// --- Start server and run initial DB check ---
 app.listen(PORT, HOST, async () => {
   console.log(`🚀 Backend server running on http://localhost:${PORT} (bound to ${HOST})`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
-  try {
-    const check = await runDbHealthCheck();
-    if (!check.ok) {
-      console.warn('⚠️ Initial DB check failed — check logs and env configuration.');
-    }
-  } catch (e) {
-    console.error('Unexpected error during DB health check:', e);
+
+  const check = await runDbHealthCheck();
+  if (!check.ok) {
+    console.warn('⚠️ Initial DB check failed — see logs above.');
   }
 });
